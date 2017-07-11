@@ -1,0 +1,28 @@
+* {
+  font-family: 'Open Sans', sans-serif;
+}
+
+.jumbotron {
+  font-size: 4em;
+  text-align: center;
+  font-weight: bold;
+  background: -moz-linear-gradient(bottom right, purple, grey);
+  background: linear-gradient(to bottom right, purple, grey);
+  color: white;
+}
+
+.form-group {
+  margin-top: 20px;
+}
+
+form, .newblog {
+  text-align: center;
+}
+
+input, textarea, button {
+  margin: 5px auto;
+  padding: 5px auto;
+  min-width: 260px;
+  max-width: 560px;
+  width: 80%;
+}
