@@ -1,12 +1,15 @@
-var express = require('express');
-var app = express();
-var bodyParser = require('body-parser');
-var methodOverride = require('method-override');
-var mongoose = require('mongoose');
-var Blogpost = require("./models/blogpost");
-//var Comment = require("./models/comment");
-//var User = require("./models/user");
-mongoose.connect("mongodb://localhost/sceptechBlog");
+var express = require('express'),
+    app = express(),
+    bodyParser = require('body-parser'),
+    methodOverride = require('method-override'),
+    mongoose = require('mongoose'),
+    passport = require('passport'),
+    LocalStrategy = require('passport-local'),
+    Blogpost = require('./models/blogpost'),
+    Comment = require('./models/comment'),
+    User = require('./models/user');
+
+mongoose.connect('mongodb://localhost/sceptechBlog');
 
 /*
 Blogpost.create(
@@ -40,13 +43,33 @@ var blogPosts = [
 ];
 */
 
+//passport configuration
+app.use(require('express-session')({
+  secret: "who wins this?!",
+  resave: false,
+  saveUninitialized: false
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
+passport.use(new LocalStrategy(User.authenticate()));
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
+
+app.use(function(req, res, next){
+  res.locals.currentUser = req.user;
+  next();
+});
+
+//routes
+
 app.get('/index', function(req, res){
 //{1, 2} 1 is the name of the object and 2 is the object and data being passed in
   Blogpost.find({}, function(err, allBlogPosts){
     if(err){
       console.log(err);
     }else{
-      res.render('index', {blogPosts: allBlogPosts});
+      res.render('blogposts/index', {blogPosts: allBlogPosts, currentUser: req.user});
     }
   });
 });
@@ -56,7 +79,8 @@ app.post('/index', function(req, res){
   var title = req.body.title;
   var image = req.body.image;
   var desc = req.body.description;
-  var newBlogPost = {title: title, image: image, description: desc};
+  var auth = req.body.author;
+  var newBlogPost = {title: title, image: image, description: desc, author: auth};
 
   //blogPosts.push(newBlogPost);
   Blogpost.create(newBlogPost, function(err, newlyCreated){
@@ -69,33 +93,34 @@ app.post('/index', function(req, res){
   });
 });
 
-app.get('/index/new', function(req, res){
-  res.render('new');
+app.get('/index/new', isLoggedIn, function(req, res){
+  res.render('blogposts/new');
 });
 
 app.get('/index/:id', function(req, res){
-  Blogpost.findById(req.params.id, function(err, foundBlogpost){
+  Blogpost.findById(req.params.id).populate("comments").exec(function(err, foundBlogpost){
     if(err){
       console.log(err);
     }else{
-      res.render("show", {blogPost: foundBlogpost});
+      console.log(foundBlogpost);
+      res.render("blogposts/show", {blogPost: foundBlogpost});
     }
   });
 });
 
 //edit
-app.get('/index/:id/edit', function(req, res){
+app.get('/index/:id/edit', isLoggedIn, function(req, res){
   Blogpost.findById(req.params.id, function(err, foundBlogpost){
     if(err){
       res.redirect('/index');
     }else{
-        res.render('edit', {blogPost: foundBlogpost});
+        res.render('blogposts/edit', {blogPost: foundBlogpost});
     }
   });
 });
 
 //update
-app.put('/index/:id', function(req, res){
+app.put('/index/:id', isLoggedIn, function(req, res){
   //find id, then info in var fields and once updated redirect
   Blogpost.findByIdAndUpdate(req.params.id, req.body.blogPost, function(err, updatedBlogpost){
     if(err){
@@ -107,7 +132,7 @@ app.put('/index/:id', function(req, res){
 });
 
 //DELETE via post
-app.delete('/index/:id', function(req, res){
+app.delete('/index/:id', isLoggedIn, function(req, res){
   //res.send("destroyed");
   Blogpost.findByIdAndRemove(req.params.id, function(err){
     if(err){
@@ -117,6 +142,142 @@ app.delete('/index/:id', function(req, res){
     }
   });
 });
+
+// COMMENTS ROUTES
+
+app.get("/index/:id/comments/new", isLoggedIn, function(req, res){
+  Blogpost.findById(req.params.id, function(err, blogpost){
+    if(err){
+      console.log(err);
+    }else{
+      //blogpost = to blogpost coming back from db to be passed into comments/new.ejs file
+      res.render('comments/new', {blogpost: blogpost});
+    }
+  });
+});
+
+app.post("/index/:id/comments", isLoggedIn, function(req, res){
+  //find blogpost
+  Blogpost.findById(req.params.id, function(err, blogpost){
+    if(err){
+      console.log(err);
+      res.redirect("/index");
+    }else{
+      Comment.create(req.body.comment, function(err, comment){
+        if(err){
+          console.log(err);
+        }else{
+          //add username and id to comment using comment schema model
+          comment.author.id = req.user._id;
+          comment.author.username = req.user.username;
+          comment.save();
+          blogpost.comments.push(comment);
+          blogpost.save();
+          res.redirect("/index/" + blogpost._id);
+        }
+      });
+    }
+  })
+});
+
+//comment/edit
+
+app.get('/index/:id/comments/:comment_id/edit', checkCommentOwnership, function(req, res){
+  Comment.findById(req.params.comment_id, function(err, foundComment){
+    if(err){
+      res.redirect('back');
+    }else{
+      res.render('comments/edit', {blogPost_id: req.params.id, comment: foundComment});
+    }
+  });
+});
+
+//comment/update
+app.put('/index/:id/comments/:comment_id', checkCommentOwnership, function(req, res){
+  Comment.findByIdAndUpdate(req.params.comment_id, req.body.comment, function(err, updatedComment){
+    if(err){
+      res.redirect('back');
+    }else{
+      res.redirect("/index/"+req.params.id);
+    }
+  });
+});
+
+app.delete('/index/:id/comments/:comment_id', checkCommentOwnership, function(req, res){
+    Comment.findByIdAndRemove(req.params.comment_id, function(err){
+    if(err){
+      res.redirect("back");
+    } else {
+      res.redirect("/index/"+ req.params.id);
+    }
+  });
+});
+
+//authentication ROUTES
+
+app.get('/register', function(req, res){
+  res.render('users/register');
+});
+
+app.post('/register', function(req, res){
+  var newUser = new User({username: req.body.username});
+  User.register(newUser, req.body.password, function(err, newuser){
+    if(err){
+      return res.render('/register');
+    }
+    passport.authenticate('local')(req, res, function(){
+      res.redirect('/index');
+    });
+  });
+});
+
+//login form
+app.get('/login', function(req, res){
+  res.render('users/login');
+});
+
+//req, middleware then callback
+app.post('/login', passport.authenticate("local",
+{
+  successRedirect: "/index",
+  failureRedirect: "/login"
+}),function(req, res){
+  //res.send('login logic happens here');
+});
+
+//logout
+app.get('/logout', function(req, res){
+  req.logout();
+  res.redirect('/index');
+});
+
+//middleware
+
+function isLoggedIn(req, res, next){
+  if(req.isAuthenticated()){
+    return next();
+  }
+    res.redirect('/login');
+}
+
+function checkCommentOwnership(req, res, next){
+  if(req.isAuthenticated()){
+    Comment.findById(req.params.comment_id, function(err, foundComment){
+      if(err){
+        res.redirect('back');
+      }else{
+        if(foundComment.author.id.equals(req.user._id)){
+          next();
+        }else{
+          res.redirect('back');
+        }
+      }
+    });
+  } else {
+    res.redirect('back');
+  }
+}
+
 
 app.listen(process.env.PORT || 3000, function(){
   console.log('blogApp is now running');

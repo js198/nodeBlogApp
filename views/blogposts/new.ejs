@@ -1,4 +1,5 @@
-<% include partials/header %>
+<% include ../partials/header %>
+
 <div class="container">
   <div class="row newblog">
     <h1>Create a new blog post</h1>
@@ -17,12 +18,16 @@
         <textarea class="form-control" type="text" name="description" placeholder="description"></textarea>
       </div>
       <div class="form-group">
+        <label>Author</label>
+        <input class="form-control" type="text" name="author" placeholder="author">
+      </div>
+      <div class="form-group">
         <button class="btn btn-lg btn-default btn-primary btn-block">Submit</button>
       </div>
     </form>
 
-    <a href="/">Go back</a>
+    <a href="/index">Go back</a>
   </div>
 </div>
 
-<% include partials/footer %>
+<% include ../partials/footer %>

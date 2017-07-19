@@ -1,5 +1,12 @@
 * {
-  font-family: 'Open Sans', sans-serif;
+  font-family: 'Slabo 27px', serif;
+  letter-spacing: 0.5px;
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  margin: auto;
 }
 
 .jumbotron {
@@ -11,6 +18,12 @@
   color: white;
 }
 
+h1{
+  text-align: center;
+  font-family: 'Slabo 27px', serif;
+  letter-spacing: 0.5px;
+}
+
 .form-group {
   margin-top: 20px;
 }
@@ -20,9 +33,42 @@ form, .newblog {
 }
 
 input, textarea, button {
-  margin: 5px auto;
-  padding: 5px auto;
+  margin: 10px auto;
+  padding: 0 auto;
   min-width: 260px;
-  max-width: 560px;
+  max-width: 480px;
+  border-radius: 5px;
   width: 80%;
+  display: block;
+}
+
+#blogTitle, #blogText{
+  text-align: center;
+  margin: 20px auto;
+  padding: 0 auto;
+  max-width: 800px;
+}
+
+#blogImage{
+  margin: 50px 0;
+  padding: 5px;
+  border: 1px solid grey;
+  border-radius: 10px;
+  width: 98%;
+  max-width: 600px;
+}
+
+#blogText {
+  text-align: left;
+  margin-top: 60px;
+}
+
+.well {
+  margin: 20px auto;
+  padding: 20px;
+  max-width: 500px;
+}
+
+.delete-form {
+  display: inline-block;
 }

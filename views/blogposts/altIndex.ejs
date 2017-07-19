@@ -1,0 +1,32 @@
+<% include ../partials/header %>
+
+<div class="container">
+  <header class="jumbotron">
+    <h1>Sceptech</h1>
+    <p>Breaking down technological advances so that you <i>know more</i> about them</p>
+  </header>
+
+  <div class="row text-center" style="display: flex; flex-wrap: wrap;">
+    <% blogPosts.filter(function(i){
+      return i.index==0;%>
+      <div class="col-md-8 col-sm-6">
+        <div class="thumbnail">
+          <img src="<%= blogPost.image %>"></img>
+          <div class="caption"><h4><%= blogPost.title %></h4></div>
+          <p><a href="/index/<%= blogPost._id %>" class="btn btn-primary">Read more..</a></p>
+        </div>
+      </div>
+    <% }); blogPosts.filter(function(i){
+      return i.index>0;%>
+      <div class="col-md-4 col-sm-6">
+        <div class="thumbnail">
+          <img src="<%= blogPost.image %>"></img>
+          <div class="caption"><h4><%= blogPost.title %></h4></div>
+          <p><a href="/index/<%= blogPost._id %>" class="btn btn-primary">Read more..</a></p>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+</div>
+
+<% include ../partials/footer %>
