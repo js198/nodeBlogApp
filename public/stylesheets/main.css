@@ -9,6 +9,34 @@
   margin: auto;
 }
 
+.navbar-brand {
+  height: 100%;
+  width: 140px;
+  font-family: 'Bungee Shade', cursive;
+}
+
+.navbar-nav {
+  font-size: 1.2em;
+}
+
+/*about css */
+.about-blurb {
+  margin: 20px auto;
+  max-width: 640px;
+  text-align: center;
+}
+
+.about-blurb>p {
+  margin: 40px 25px;
+  font-size: 1.2em;
+
+}
+
+.about-blurb>img{
+  max-width: 500px;
+  width: 90%;
+}
+
 .jumbotron {
   font-size: 4em;
   text-align: center;
@@ -21,23 +49,54 @@
 h1{
   text-align: center;
   font-family: 'Slabo 27px', serif;
-  letter-spacing: 0.5px;
+}
+
+#sceptechLogo{
+  display: block;
+  max-width: 560px;
+  width: 90%;
+  font-family: 'Bungee Shade', cursive;
+}
+
+.greetings{
+  position: relative;
+}
+
+.greetings::before {
+  content: '';
+  background-color: green;
+  width: 12px;
+  height: 12px;
+  border-radius: 100%;
+  margin-right: 10px;
+  display: inline-block;
+}
+
+.form-container{
+  margin: 40px auto 0;
+  max-width: 800px;
 }
 
 .form-group {
-  margin-top: 20px;
+  margin: 10px auto;
 }
 
 form, .newblog {
   text-align: center;
+  margin: 5px;
 }
 
-input, textarea, button {
-  margin: 10px auto;
+.blog-buttons{
+  margin: 60px auto;
+  text-align: center;
+}
+
+.login-form {
+  margin: 60px auto;
   padding: 0 auto;
   min-width: 260px;
-  max-width: 480px;
-  border-radius: 5px;
+  max-width: 460px;
+  border-radius: 2px;
   width: 80%;
   display: block;
 }
@@ -50,7 +109,7 @@ input, textarea, button {
 }
 
 #blogImage{
-  margin: 50px 0;
+  margin: 50px auto;
   padding: 5px;
   border: 1px solid grey;
   border-radius: 10px;
@@ -60,15 +119,46 @@ input, textarea, button {
 
 #blogText {
   text-align: left;
+  font-size: 1.1em;
   margin-top: 60px;
 }
 
 .well {
-  margin: 20px auto;
+  margin: 0 auto 20px;
   padding: 20px;
-  max-width: 500px;
+  max-width: 600px;
+}
+
+.edit-blog{
+  border: 1px solid black;
+  color: black;
+}
+
+.delete-blog{
+  background-color: black;
+  color: white;
+}
+
+.delete-blog:hover {
+  background-color: white;
+  color: black;
+}
+
+.pull-right{
+  display: inline-block;
+  text-align: right;
 }
 
 .delete-form {
   display: inline-block;
+}
+
+footer {
+  text-align: center;
+  margin: 0;
+  padding: 10px;
+  bottom: 0;
+  background-color: #333;
+  color: white;
+  text-transform: uppercase;
 }

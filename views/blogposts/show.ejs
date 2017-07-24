@@ -7,21 +7,25 @@
   <div class="col-md-12">
     <img class="img-responsive" id="blogImage" src="<%= blogPost.image %>"/>
 
-    <p id="blogText"><%= blogPost.description %><br><br><br>
+    <!-- !!!!!!!!!!!!!!!<%- %> evaluates the code in between the node markers to convert html into user-friendly text. <%= %> simply takes what is entered-not converting html tags !!!!!!-->
+
+    <p id="blogText"><%- blogPost.description %><br><br><br>
     <span id="dateCreated"><%= blogPost.created.toDateString() %></span></p><hr>
     <% if(currentUser && currentUser.username === "johnnygogo"){ %>
-    <a href="/index/<%= blogPost._id %>/edit"><button class="btn btn-link">Edit</button></a>
-    <form class="delete-form" action="/index/<%= blogPost._id %>?_method=DELETE" method="POST">
-      <button class="btn btn-danger">Delete</button>
-    </form>
-    <% } %>
+    <div class="blog-buttons">
+      <a href="/index/<%= blogPost._id %>/edit"><button class="btn edit-blog">Edit Blogpost</button></a>
+      <form class="delete-form" action="/index/<%= blogPost._id %>?_method=DELETE" method="POST">
+        <button class="btn delete-blog">Delete Blogpost</button>
+      </form>
+    </div><hr>
+    <% }; %>
 
     <div class="well">
       <a href="/index/<%= blogPost._id %>/comments/new">Add new comment</a><hr>
       <% blogPost.comments.forEach(function(comment){ %>
         <div class="row">
           <div class="col-md-12">
-            <p><i><%= comment.author.username %></i> -<span class="pull-right"><%= Date.now() %></span><br>
+            <p><strong><i><%= comment.author.username %></i></strong> -<span class="pull-right"><%= Date.now() %></span><br>
             <%= comment.text %></p>
             <% if (currentUser && currentUser.username === "johnnygogo") { %>
             <a class="btn btn-xs btn-warning" href="/index/<%= blogPost._id %>/comments/<%= comment._id %>/edit">Edit</a>

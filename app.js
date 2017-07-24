@@ -1,10 +1,12 @@
 var express = require('express'),
     app = express(),
     bodyParser = require('body-parser'),
-    methodOverride = require('method-override'),
+    expressSanitizer = require('express-sanitizer'),
     mongoose = require('mongoose'),
     passport = require('passport'),
     LocalStrategy = require('passport-local'),
+    methodOverride = require('method-override'),
+    flash = require('connect-flash'),
     Blogpost = require('./models/blogpost'),
     Comment = require('./models/comment'),
     User = require('./models/user');
@@ -31,7 +33,9 @@ app.use(express.static(__dirname + '/public/images'));
 //standard way to init bodyParser
 app.use(bodyParser.urlencoded({extended: true}));
 //in order to use PUT or DELETE requests as routers in this app, use method override. otherwise just put app.post (.ejs would still require ?_method=PUT/DELETE etc)
+app.use(expressSanitizer());
 app.use(methodOverride('_method'));
+app.use(flash());
 //in order to leave off ejs
 app.set('view engine', 'ejs');
 
@@ -58,6 +62,8 @@ passport.deserializeUser(User.deserializeUser());
 
 app.use(function(req, res, next){
   res.locals.currentUser = req.user;
+  res.locals.error = req.flash("error");
+  res.locals.success = req.flash("success");
   next();
 });
 
@@ -78,7 +84,7 @@ app.post('/index', function(req, res){
   //connect to html input form via name
   var title = req.body.title;
   var image = req.body.image;
-  var desc = req.body.description;
+  var desc = req.sanitize(req.body.description);
   var auth = req.body.author;
   var newBlogPost = {title: title, image: image, description: desc, author: auth};
 
@@ -103,7 +109,7 @@ app.get('/index/:id', function(req, res){
       console.log(err);
     }else{
       console.log(foundBlogpost);
-      res.render("blogposts/show", {blogPost: foundBlogpost});
+      res.render('blogposts/show', {blogPost: foundBlogpost});
     }
   });
 });
@@ -114,16 +120,19 @@ app.get('/index/:id/edit', isLoggedIn, function(req, res){
     if(err){
       res.redirect('/index');
     }else{
-        res.render('blogposts/edit', {blogPost: foundBlogpost});
+        res.render('blogposts/edit', {blogpost: foundBlogpost});
     }
   });
 });
 
 //update
 app.put('/index/:id', isLoggedIn, function(req, res){
+  //sanitize blogpost.description before updating the whole entire blog
+  req.body.blogpost.description = req.sanitize(req.body.blogpost.description);
   //find id, then info in var fields and once updated redirect
-  Blogpost.findByIdAndUpdate(req.params.id, req.body.blogPost, function(err, updatedBlogpost){
+  Blogpost.findByIdAndUpdate(req.params.id, req.body.blogpost, function(err, updatedBlogpost){
     if(err){
+      req.flash('error', err.message);
       res.redirect('/index');
     }else{
       res.redirect('/index/' + req.params.id);
@@ -136,16 +145,16 @@ app.delete('/index/:id', isLoggedIn, function(req, res){
   //res.send("destroyed");
   Blogpost.findByIdAndRemove(req.params.id, function(err){
     if(err){
-      res.redirect("/index");
+      res.redirect('/index');
     }else{
-      res.redirect("/index");
+      res.redirect('/index');
     }
   });
 });
 
 // COMMENTS ROUTES
 
-app.get("/index/:id/comments/new", isLoggedIn, function(req, res){
+app.get('/index/:id/comments/new', isLoggedIn, function(req, res){
   Blogpost.findById(req.params.id, function(err, blogpost){
     if(err){
       console.log(err);
@@ -156,12 +165,12 @@ app.get("/index/:id/comments/new", isLoggedIn, function(req, res){
   });
 });
 
-app.post("/index/:id/comments", isLoggedIn, function(req, res){
+app.post('/index/:id/comments', isLoggedIn, function(req, res){
   //find blogpost
   Blogpost.findById(req.params.id, function(err, blogpost){
     if(err){
       console.log(err);
-      res.redirect("/index");
+      res.redirect('/index');
     }else{
       Comment.create(req.body.comment, function(err, comment){
         if(err){
@@ -173,7 +182,7 @@ app.post("/index/:id/comments", isLoggedIn, function(req, res){
           comment.save();
           blogpost.comments.push(comment);
           blogpost.save();
-          res.redirect("/index/" + blogpost._id);
+          res.redirect('/index/' + blogpost._id);
         }
       });
     }
@@ -198,7 +207,7 @@ app.put('/index/:id/comments/:comment_id', checkCommentOwnership, function(req, 
     if(err){
       res.redirect('back');
     }else{
-      res.redirect("/index/"+req.params.id);
+      res.redirect('/index/'+req.params.id);
     }
   });
 });
@@ -206,9 +215,9 @@ app.put('/index/:id/comments/:comment_id', checkCommentOwnership, function(req, 
 app.delete('/index/:id/comments/:comment_id', checkCommentOwnership, function(req, res){
     Comment.findByIdAndRemove(req.params.comment_id, function(err){
     if(err){
-      res.redirect("back");
+      res.redirect('back');
     } else {
-      res.redirect("/index/"+ req.params.id);
+      res.redirect('/index/'+ req.params.id);
     }
   });
 });
@@ -223,9 +232,11 @@ app.post('/register', function(req, res){
   var newUser = new User({username: req.body.username});
   User.register(newUser, req.body.password, function(err, newuser){
     if(err){
-      return res.render('/register');
+      req.flash('error', err.message);
+      return res.render('users/register');
     }
     passport.authenticate('local')(req, res, function(){
+      req.flash('success', 'You have registered as: ' + newUser.username);
       res.redirect('/index');
     });
   });
@@ -237,10 +248,10 @@ app.get('/login', function(req, res){
 });
 
 //req, middleware then callback
-app.post('/login', passport.authenticate("local",
+app.post('/login', passport.authenticate('local',
 {
-  successRedirect: "/index",
-  failureRedirect: "/login"
+  successRedirect: '/index',
+  failureRedirect: '/login'
 }),function(req, res){
   //res.send('login logic happens here');
 });
@@ -248,6 +259,7 @@ app.post('/login', passport.authenticate("local",
 //logout
 app.get('/logout', function(req, res){
   req.logout();
+  req.flash('success', 'You have successfully logged out!');
   res.redirect('/index');
 });
 
@@ -257,6 +269,7 @@ function isLoggedIn(req, res, next){
   if(req.isAuthenticated()){
     return next();
   }
+    req.flash('error', 'You need to be logged in in order to do that.');
     res.redirect('/login');
 }
 
@@ -264,19 +277,33 @@ function checkCommentOwnership(req, res, next){
   if(req.isAuthenticated()){
     Comment.findById(req.params.comment_id, function(err, foundComment){
       if(err){
+        req.flash('error', 'Blogpost not found.');
         res.redirect('back');
       }else{
-        if(foundComment.author.id.equals(req.user._id)){
+        console.log(foundComment._id);
+        if(foundComment._id.equals(req.user._id) || req.user.username === "johnnygogo"){
           next();
         }else{
+          req.flash('error', 'You dont have permission to do that.');
           res.redirect('back');
         }
       }
     });
   } else {
+    req.flash('error', 'You need to be logged in in order to do that.');
     res.redirect('back');
   }
 }
+
+//whataboutery pages
+
+app.get('/about', function(req, res){
+  res.render('aboutEtAl/about');
+});
+
+app.get('*', function(req, res) {
+  res.status(404).render('aboutEtAl/404');
+});
 
 
 app.listen(process.env.PORT || 3000, function(){
